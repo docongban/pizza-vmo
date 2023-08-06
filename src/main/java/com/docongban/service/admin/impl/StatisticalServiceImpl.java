@@ -114,6 +114,38 @@ public class StatisticalServiceImpl implements StatisticalService {
 
 		// Đến đây sẽ thu được: (order_account_id, totalPrice, date) - listTotals
 		// -> tính tổng doanh thu theo ngày
+		List<StatisticalResponse> listStatisticalResponses = this.totalStaticPerDay(listTotals);
+
+		// Đến đây mình sẽ được một list chứa tổng doanh thu của các ngày: (ngày, tổng
+		// doanh thu)
+		List<StatisticalResponse> listClone = new ArrayList<>(listStatisticalResponses);
+		Long totalTurnover = 0L;
+		for (int i = 0; i < listClone.size(); i++) {
+			StatisticalResponse statistical = listClone.get(i);
+			if (statistical.getDate() != null) {
+				String pattern = "dd/MM/yyyy HH:mm:ss";
+
+				DateFormat df = new SimpleDateFormat(pattern);
+				String date = df.format(statistical.getDate());
+				String statisticalMonth = date.substring(3, 5);
+				if (!statisticalMonth.equals(month)) {
+					listStatisticalResponses.remove(statistical);
+				} else { // Tính tổng doanh thu:
+					totalTurnover += statistical.getTurnover();
+				}
+			}
+
+		}
+
+		HttpSession session = request.getSession();
+		session.setAttribute("statisticals", listStatisticalResponses);
+		session.setAttribute("totalTurnover", totalTurnover);
+		session.setAttribute("month", month);
+
+		return listStatisticalResponses;
+	}
+
+	private List<StatisticalResponse> totalStaticPerDay(List<TotalEachOrderAccount> listTotals){
 		List<StatisticalResponse> listStatisticalResponses = new ArrayList<StatisticalResponse>();
 		for (TotalEachOrderAccount totalObj : listTotals) {
 			Boolean check = false;
@@ -154,67 +186,6 @@ public class StatisticalServiceImpl implements StatisticalService {
 				listStatisticalResponses.add(statisticalResponse);
 			}
 		}
-
-		// Đến đây mình sẽ được một list chứa tổng doanh thu của các ngày: (ngày, tổng
-		// doanh thu)
-		List<StatisticalResponse> listClone = new ArrayList<>(listStatisticalResponses);
-		Long totalTurnover = 0L;
-		for (int i = 0; i < listClone.size(); i++) {
-			StatisticalResponse statistical = listClone.get(i);
-			if (statistical.getDate() != null) {
-				String pattern = "dd/MM/yyyy HH:mm:ss";
-
-				DateFormat df = new SimpleDateFormat(pattern);
-				String date = df.format(statistical.getDate());
-				String statisticalMonth = date.substring(3, 5);
-				if (!statisticalMonth.equals(month)) {
-					listStatisticalResponses.remove(statistical);
-				} else { // Tính tổng doanh thu:
-					totalTurnover += statistical.getTurnover();
-				}
-			}
-
-		}
-
-		// Thêm những ngày không có doanh thu vào danh sách:
-//		switch(month) {
-//			case "01":
-//			case "03":
-//			case "05":
-//			case "07":
-//			case "08":
-//			case "10":
-//			case "12":
-//				for(int i = 1 ; i <= 31 ; i++) {	
-//					// Kiểm tra xem trong list thống kê tháng đó còn thiếu ngày nào (ngày không có doanh thu) thì thêm vào ngày đó với doanh thu là 0.
-//					Boolean check = false;
-//					int year = 0;
-//					for(StatisticalResponse statistical : listStatisticalResponses) {
-//						Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
-//						cal.setTime(statistical.getDate());
-//						int day = cal.get(Calendar.DAY_OF_MONTH);
-//						year = cal.get(Calendar.YEAR);
-//						if(day == i) {
-//							check = true;
-//						}
-//					}
-//					
-//					if( !check ) {
-//						Date date = new Date(year, Integer.parseInt(month), i);
-//						listStatisticalResponses.add( new StatisticalResponse(date, 0L));
-//					}
-//				}
-//			
-//				
-//			default:
-//				System.out.println("default");
-//				break;
-//		}
-
-		HttpSession session = request.getSession();
-		session.setAttribute("statisticals", listStatisticalResponses);
-		session.setAttribute("totalTurnover", totalTurnover);
-		session.setAttribute("month", month);
 
 		return listStatisticalResponses;
 	}
